@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building a Strava Data Pipeline from Scratch — Kallol Deb</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../index.html" class="site-title">Kallol Deb</a>
+      <nav>
+        <a href="../index.html">Blog</a>
+        <a href="../about.html">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <article class="post-page">
+      <a href="../index.html" class="back-link">← Back to blog</a>
+      <div class="post-meta">
+        <span class="post-tag">Engineering</span>
+        <time>September 15, 2026</time>
+      </div>
+      <h1>Building a Strava Data Pipeline from Scratch</h1>
+      <div class="post-body">
+        <p>Syncing athlete data from Strava sounds simple. OAuth, webhooks, a few API calls, done. Then you actually build it, and you discover a series of edge cases that the documentation mentions only in passing — or not at all.</p>
+
+        <p>Here's what we learned building Omni Coach's Strava pipeline.</p>
+
+        <h2>Start with the webhook, not the polling loop</h2>
+
+        <p>The first version of our sync used a polling loop. Every 15 minutes, check for new activities. It worked fine for a handful of test users. It did not work fine when we added real coaches with real athlete rosters. The API rate limits hit fast, and the lag between an athlete finishing a run and a coach seeing the data was unacceptable.</p>
+
+        <p>Strava's webhook system is the right answer. When an athlete completes an activity, Strava sends you a push notification. You store the event, then process it asynchronously. The lag drops to seconds. The API calls become targeted rather than exploratory.</p>
+
+        <p>The catch: webhook subscriptions are per application, not per user. You get one endpoint for all your users' events. That endpoint needs to be fast, idempotent, and resilient to duplicate delivery — because Strava will retry if you don't respond with a 200 inside two seconds.</p>
+
+        <h2>Token refresh is where things get interesting</h2>
+
+        <p>Strava access tokens expire after six hours. Refresh tokens last longer, but they also rotate — each time you use a refresh token, you get a new one back. If two processes try to refresh the same token simultaneously, one of them will succeed and the other will get an invalid token error.</p>
+
+        <p>We solved this with a simple database lock: before refreshing, write a "refresh in progress" flag with a timestamp. If the flag is set and fresh, skip the refresh and wait. If the flag is stale (say, more than 30 seconds old), assume the previous refresh crashed and proceed anyway.</p>
+
+        <h2>Handling revoked access gracefully</h2>
+
+        <p>Athletes disconnect apps. Sometimes deliberately, sometimes by accident, sometimes because they switched phones and re-authorised without realising the old token was still in our system. Strava sends a deauthorisation event to your webhook endpoint, but you can't rely on always receiving it.</p>
+
+        <p>Our approach: treat every 401 as a potential permanent revocation. Log it, flag the athlete's connection as degraded, and surface it in the coach's dashboard. Don't silently swallow the error. Coaches need to know when data is missing, not discover it three weeks later during a review.</p>
+
+        <h2>What we'd do differently</h2>
+
+        <p>If I were starting over, I'd design the pipeline around eventual consistency from day one rather than bolting it on later. Assume every step can fail. Assume events will arrive out of order. Assume the same activity will be synced twice. Build the processing layer to be idempotent, and let the infrastructure worry about at-least-once delivery.</p>
+
+        <p>It's more upfront work. It's much less firefighting later.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Kallol Deb · <a href="https://github.com/kallol-deb">GitHub</a></p>
+    </div>
+  </footer>
+</body>
+</html>

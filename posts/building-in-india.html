@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building a SaaS in India: What Nobody Tells You About Payments — Kallol Deb</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../index.html" class="site-title">Kallol Deb</a>
+      <nav>
+        <a href="../index.html">Blog</a>
+        <a href="../about.html">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <article class="post-page">
+      <a href="../index.html" class="back-link">← Back to blog</a>
+      <div class="post-meta">
+        <span class="post-tag">Startups</span>
+        <time>August 10, 2026</time>
+      </div>
+      <h1>Building a SaaS in India: What Nobody Tells You About Payments</h1>
+      <div class="post-body">
+        <p>Razorpay is excellent. If you're building a payment-enabled product in India and you haven't looked at it yet, start there. The documentation is good, the dashboard is clean, and their support team actually responds.</p>
+
+        <p>But "we accept payments" and "our recurring billing actually works" are two very different things. The path between them is longer than any founder I know expected — including me.</p>
+
+        <h2>The mandate problem</h2>
+
+        <p>Subscription billing in India runs on NACH mandates or UPI AutoPay, depending on the payment method. Unlike a credit card recurring charge in the West — where you store a token and charge it on schedule — Indian recurring payments require the customer to explicitly authorise a mandate up front. The bank and NPCI are in the loop. The customer gets an approval flow, not just a charge.</p>
+
+        <p>This is actually good for fraud prevention. It is occasionally inconvenient for conversion.</p>
+
+        <p>The first time a customer sees a mandate authorisation screen that looks nothing like your product's UI, some of them will drop off. You can't eliminate this. You can reduce it by setting up e-mandate flows that pre-fill as much as possible and explain clearly what the customer is authorising.</p>
+
+        <h2>UPI timeouts are real</h2>
+
+        <p>UPI is fast. Usually. When it isn't, it fails in ways that are hard to handle cleanly. A payment can time out on the customer side but still succeed on the bank's side, leaving you with a transaction in an ambiguous state. Razorpay's webhook system is how you reconcile this — but you need to actually handle the <code>payment.failed</code> and <code>payment.captured</code> events correctly, including the case where you receive a <code>captured</code> event after you've already marked an order as failed.</p>
+
+        <p>Idempotency isn't optional. Design for it from day one.</p>
+
+        <h2>RBI regulations move</h2>
+
+        <p>The RBI has updated its guidelines on recurring payment mandates multiple times in the last three years. Each update has required changes to how payment processors handle the flow, which has cascaded into changes for everyone building on top of them. If you're building recurring billing into your product, subscribe to RBI circulars and Razorpay's developer changelog. You will need to respond to regulatory changes at some point. Better to know about them when they're announced than when your payments start failing.</p>
+
+        <h2>What I'd tell someone starting today</h2>
+
+        <p>Build your billing logic behind a clean abstraction layer. Don't scatter Razorpay API calls throughout your codebase. When the payment provider's API changes, or when you need to add a second payment method, or when the RBI requires a flow change, you want to make the update in one place.</p>
+
+        <p>Test the failure paths harder than the happy path. The happy path works. It's the edge cases — failed mandates, bounced debit attempts, partial refunds, expired cards — that will generate support tickets at 2 AM.</p>
+
+        <p>And above all: if you're building for India, build for India. Don't try to map Western payment assumptions onto a market that has its own logic. UPI, NACH, and the mandate system exist for reasons. Understand those reasons and you'll design better integrations.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Kallol Deb · <a href="https://github.com/kallol-deb">GitHub</a></p>
+    </div>
+  </footer>
+</body>
+</html>
